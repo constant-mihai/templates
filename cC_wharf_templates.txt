@@ -1,0 +1,21 @@
+:insert
+/*
+ * $Id: codec.c 17673 2016-08-31 10:30:07Z jba $
+ *
+ * Copyright (C) 2016-2016 Core Network Dynamics
+ *
+ * This file is part of the OpenEPC project, Wharf framework.
+ *
+ */
+
+/**
+ * \file
+ *
+ * Filename
+ *
+ * RFC/STANDARD: 
+ *
+ * \author 
+ *
+ */
+
