@@ -12,11 +12,15 @@ program_C_SRCS+=
 program_CXX_SRCS+=
 program_CXX_OBJS := ${program_CXX_SRCS:.C=.o}
 program_C_OBJS := ${program_C_SRCS:.c=.o}
+program_H := $(wildcard *.h)
+program_HPP := $(wildcard *.hpp)
+program_CAP_H := $(wildcard *.H)
 program_INCLUDE_DIRS := 
 program_LIBRARY_DIRS := 
 #program_LIBRARIES :=  
 
 program_OBJS := $(program_C_OBJS) $(program_CXX_OBJS)
+program_INCS := $(program_H) $(program_HPP) $(program_CAP_H)
 
 CPPFLAGS += $(foreach includedir,$(program_INCLUDE_DIRS),-I$(includedir))
 LDFLAGS += $(foreach librarydir,$(program_LIBRARY_DIRS),-L$(librarydir))
@@ -24,13 +28,15 @@ LDFLAGS += $(foreach library,$(program_LIBRARIES),-l$(library))
 
 .PHONY: subdirs $(SUBDIRS) all clean cleanall debug
 
-main: subdirs main.o 
+main: subdirs $(program_OBJS) 
 	$(CXX) $(CDEBUG) $(CPPFLAGS) $(LDFLAGS) $(program_OBJS) -o main
+
+$(program_OBJS): $(program_INCS)
 
 subdirs:
 
-main.o: main.c
-	$(CXX) $(CDEBUG) $(CPPFLAGS) -c main.c
+#main.o: main.c
+#	$(CXX) $(CDEBUG) $(CPPFLAGS) -c main.c
 
 all: main
 
