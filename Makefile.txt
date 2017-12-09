@@ -1,74 +1,205 @@
+# --------------------------- GNU
 SHELL:= /bin/bash
+.RECIPEPREFIX := >
+.SUFFIXES:
+.SUFFIXES: .c .C .cpp .o
 
-CFLAGS+= -Wall -fno-diagnostics-show-caret 
-CPPFLAGS+= -Wall -O0 -fno-diagnostics-show-caret #-g
+# --------------------------- General 
+name := ziggurat
+# Recursive determines wether the $(library_dirs) subdirectories have makefiles of their own.
+# If yes, then make descends into each one and calls make there
+recursive := yes 
+main := yes 
+
+# ---------------------------- Shared library 
+shl_name := $(name)
+shl_version := 1
+shl_release_number := 0
+shl_minor_number := 0
+shl_linker_name := lib$(shl_name).so
+shl_soname := $(shl_linker_name).$(shl_version)
+shl_fullname := $(shl_soname).$(shl_minor_number).$(shl_release_number)
+
+
+# ---------------------------- Directories 
 SUBDIRS := ./utils
-CURR_DIR=$(PWD)
-CXX = <COMPILER> 
+CURR_DIR := $(PWD)
+include_dirs := 
+library_dirs := test_lib test_lib_2
+libraries := test_lib test_lib_2 
 
-program_C_SRCS := $(wildcard *.c)
-program_CXX_SRCS := $(wildcard *.C)
-program_C_SRCS+=
-program_CXX_SRCS+=
-program_CXX_OBJS := ${program_CXX_SRCS:.C=.o}
-program_C_OBJS := ${program_C_SRCS:.c=.o}
-program_H := $(wildcard *.h)
-program_HPP := $(wildcard *.hpp)
-program_CAP_H := $(wildcard *.H)
-program_INCLUDE_DIRS := 
-program_LIBRARY_DIRS := 
-#program_LIBRARIES :=  
+# ---------------------------- Compiler 
+CC := gcc
+CXX := g++ 
+compiler := $(CXX)
 
-program_OBJS := $(program_C_OBJS) $(program_CXX_OBJS)
-program_INCS := $(program_H) $(program_HPP) $(program_CAP_H)
+# Compilation command for the main program.
+compile_main = $(compiler) $(objs) -o $(name) $(LDFLAGS)
 
-CPPFLAGS += $(foreach includedir,$(program_INCLUDE_DIRS),-I$(includedir))
-LDFLAGS += $(foreach librarydir,$(program_LIBRARY_DIRS),-L$(librarydir))
-LDFLAGS += $(foreach library,$(program_LIBRARIES),-l$(library))
+# Compilation command for a shared lib. One liner
+#compile_shared_lib = $(compiler) $(shared_flags) $(objs_without_main) -o $(shl_fullname) $(LDFLAGS); ln -sf $(shl_fullname) $(shl_soname); ln -sf $(shl_fullname) $(shl_linker_name)
+# Two liner, define:
+define compile_shared_lib
+$(compiler) $(shared_flags) $(objs_without_main) -o $(shl_fullname) $(LDFLAGS)
+ln -sf $(shl_fullname) $(shl_soname)
+ln -sf $(shl_fullname) $(shl_linker_name)
+endef
 
-.PHONY: subdirs $(SUBDIRS) all clean cleanall debug
+# Test if this is the root directory of the project.
+# If it is then compile this as such.
+# It it is NOT then compile this as a lib.
+compile = $(if $(findstring yes,$(main)),$(compile_main),$(compile_shared_lib))
 
-main: subdirs $(program_OBJS) 
-	$(CXX) $(CDEBUG) $(CPPFLAGS) $(LDFLAGS) $(program_OBJS) -o main
 
-$(program_OBJS): $(program_INCS)
+# ---------------------------- User defined functions
+test_func = $(2) $(1) 
+foo = $(call test_func,a,b)
+
+# Look into each directory from SUBDIRS and search for *.(arg).
+# Where arg can be:
+# A header file
+#  - h
+#  - hpp
+#  - H
+# Or a source file
+#  - c
+#  - cpp
+#  - C
+deep_source_search = $(foreach dir,$(SUBDIRS),$(wildcard $(dir)/*.$(1)))
+
+
+# ---------------------------- Headers 
+h := $(wildcard *.h) $(call deep_source_search,h)
+hpp := $(wildcard *.hpp) $(call deep_source_search,hpp) 
+cap_h := $(wildcard *.H) $(call deep_source_search,H)
+
+
+# ---------------------------- Sources 
+c_srcs := $(wildcard *.c) $(call deep_source_search,c)
+cpp_srcs := $(wildcard *.cpp) $(call deep_source_search,cpp) 
+cxx_srcs := $(wildcard *.C) $(call deep_source_search,C) 
+
+srcs = $(c_srcs) $(cpp_srcs) $(cxx_srcs)
+
+# ---------------------------- Objects 
+#cxx_objs := ${cxx_srcs:.C=.o}
+#cxx_objs += ${cpp_srcs:.cpp=.o}
+#c_objs := ${c_srcs:.c=.o}
+basenames := $(basename $(srcs))
+objs := $(addsuffix .o,$(basenames))
+objs_without_main := $(filter-out $(name).o,$(objs))
+
+
+# ---------------------------- Includes 
+incs := $(h) $(hpp) $(cap_h)
+
+
+# ---------------------------- Flags
+shared_flags := -shared -Wl,-soname,$(shl_soname)
+CFLAGS += -Wall -fno-diagnostics-show-caret 
+CPPFLAGS += -Wall -O0 -fno-diagnostics-show-caret -std=c++11 -fPIC
+
+CPPFLAGS += $(foreach includedir,$(include_dirs),-I$(includedir))
+LDFLAGS += $(foreach librarydir,$(library_dirs),-L$(librarydir))
+LDFLAGS += $(foreach library,$(libraries),-l$(library))
+
+
+# ---------------------------- Phony targets (aka targets which are not connected to files) 
+.PHONY: all clean cleanall debug
+
+
+##############################################################################################
+########################################## Recipes ###########################################
+##############################################################################################
+##############################################################################################
+
+define f_clean
+rm -f *.o; rm -f *.so*;
+endef
+
+define f_clean_main
+$(fclean) if [ -a $(name) ]; then rm $(name); fi;
+endef
+
+define f_compile_subdir
+cd $(1); make; cd $(CURR_DIR); 
+endef
+
+define f_clean_subdir
+cd $(1); $(f_clean) cd $(CURR_DIR);
+endef
+
+compile_subdirectories = $(foreach dir,$(library_dirs),$(call f_compile_subdir,$(dir)))
+clean_subdirectories = $(foreach dir,$(library_dirs),$(call f_clean_subdir,$(dir)))
+
+main: $(objs)
+>   $(if $(findstring yes,$(recursive)),$(compile_subdirectories),)
+>   $(compile)
+
+$(objs): $(srcs) $(incs)
 
 subdirs:
 
-#main.o: main.c
-#	$(CXX) $(CDEBUG) $(CPPFLAGS) -c main.c
-
 all: main
+
+shared: $(objs)
+>   $(if $(findstring yes,$(recursive)),$(compile_subdirectories),)
+>   $(compile_shared_lib)
 
 print-%: ; @echo $* = $($*)
 
 print-all: ;
-	@echo SHELL 				= $(SHELL)
-	@echo CFLAGS 				= $(CFLAGS)
-	@echo CPPFLAGS 				= $(CPPFLAGS)
-	@echo SUBDIRS 				= $(SUBDIRS)
-	@echo CURR_DIR 				= $(PWD)
-	@echo CXX 					= $(CXX) 
-	@echo program_C_SRCS 		= $(program_C_SRCS)
-	@echo program_CXX_SRCS 		= $(program_CXX_SRCS)
-	@echo program_C_SRCS 		= $(program_C_SRCS)
-	@echo program_CXX_SRCS 		= $(program_CXX_SRCS)
-	@echo program_CXX_OBJS 		= $(program_CXX_OBJS)
-	@echo program_C_OBJS 		= $(program_C_OBJS)
-	@echo program_INCLUDE_DIRS 	= $(program_INCLUDE_DIRS) 
-	@echo program_LIBRARY_DIRS 	= $(program_LIBRARY_DIRS)
-	@echo program_LIBRARIES 	= $(program_LIBRARIES)
+>    @echo ------------------------------ General
+>    @echo SHELL                = $(SHELL)
+>    @echo name                 = $(name) 
+>    @echo ------------------------------------------ Shared library
+>    @echo shl_name           = $(shl_name) 
+>    @echo shl_version        = $(shl_version)
+>    @echo shl_release_number = $(shl_release_number) 
+>    @echo shl_minor_number   = $(shl_minor_number)
+>    @echo shl_linker_name    = $(shl_linker_name)
+>    @echo shl_soname         = $(shl_soname)
+>    @echo shl_fullname       = $(shl_fullname)
 
-program_OBJS := $(program_C_OBJS) $(program_CXX_OBJS)
+>    @echo ------------------------------------------ Directories  
+>    @echo SUBDIRS              = $(SUBDIRS) 
+>    @echo CURR_DIR             = $($CURR_DIR)
+>    @echo include_dirs = $(include_dirs) 
+>    @echo library_dirs = $(library_dirs)
+>    @echo libraries    = $(libraries)
 
+>    @echo ---------------------------- Compiler 
+>    @echo CC                   = $(CC) 
+>    @echo CXX                  = $(CXX) 
+>    @echo compiler             = $(compiler)
+
+>    @echo ---------------------------- Flags
+>    @echo shared               = $(shared)
+>    @echo CFLAGS               = $(CFLAGS)
+>    @echo CPPFLAGS             = $(CPPFLAGS)
+>    @echo LDFLAGS              = $(LDFLAGS)
+
+>    @echo ---------------------------- Sources 
+>    @echo c_srcs       = $(c_srcs)
+>    @echo c_srcs       = $(c_srcs)
+>    @echo cxx_srcs     = $(cxx_srcs)
+>    @echo ---------------------------- Objects 
+>    @echo cxx_objs     = $(cxx_objs)
+>    @echo c_objs       = $(c_objs)
+>    @echo ---------------------------- Headers 
+>    @echo h            = $(h)
+>    @echo hpp          = $(hpp)
+>    @echo cap_h        = $(cap_h)
 
 clean:
-	rm -f *o
-	if [ -a main ]; then rm main; fi;
+>   $(f_clean_main)
 
 cleanall: 
-	rm -f *o
-	if [ -a main ]; then rm main; fi;
+>   $(if $(findstring yes,$(recursive)),$(clean_subdirectories),)
+>   $(f_clean_main)
 
-debug: 
-	$(MAKE) CDEBUG="-g"
+debug: CPPFLAGS += -g 
+debug: all 
+
+debug-shared: CPPFLAGS += -g
+debug-shared: shared
