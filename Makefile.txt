@@ -5,11 +5,11 @@ SHELL:= /bin/bash
 .SUFFIXES: .c .C .cpp .o
 
 # --------------------------- General 
-name := ziggurat
+name := <NAME> 
 # Recursive determines wether the $(library_dirs) subdirectories have makefiles of their own.
 # If yes, then make descends into each one and calls make there
-recursive := yes 
-main := yes 
+recursive := <RECURSIVE> 
+main := <MAIN> 
 
 # ---------------------------- Shared library 
 shl_name := $(name)
@@ -22,17 +22,16 @@ shl_fullname := $(shl_soname).$(shl_minor_number).$(shl_release_number)
 
 
 # ---------------------------- Directories 
-SUBDIRS := ./utils
+SUBDIRS := <SUBDIRS> 
 CURR_DIR := $(PWD)
 include_dirs := 
-library_dirs := test_lib test_lib_2
-libraries := test_lib test_lib_2 
+library_dirs := <LIBDIRS> 
+libraries := <LIBRARIES> 
 
 # ---------------------------- Compiler 
 CC := gcc
 CXX := g++ 
-compiler := $(CXX)
-
+compiler := <COMPILER> 
 # Compilation command for the main program.
 compile_main = $(compiler) $(objs) -o $(name) $(LDFLAGS)
 
@@ -52,9 +51,6 @@ compile = $(if $(findstring yes,$(main)),$(compile_main),$(compile_shared_lib))
 
 
 # ---------------------------- User defined functions
-test_func = $(2) $(1) 
-foo = $(call test_func,a,b)
-
 # Look into each directory from SUBDIRS and search for *.(arg).
 # Where arg can be:
 # A header file
@@ -65,19 +61,19 @@ foo = $(call test_func,a,b)
 #  - c
 #  - cpp
 #  - C
-deep_source_search = $(foreach dir,$(SUBDIRS),$(wildcard $(dir)/*.$(1)))
+f_deep_source_search = $(foreach dir,$(SUBDIRS),$(wildcard $(dir)/*.$(1)))
 
 
 # ---------------------------- Headers 
-h := $(wildcard *.h) $(call deep_source_search,h)
-hpp := $(wildcard *.hpp) $(call deep_source_search,hpp) 
-cap_h := $(wildcard *.H) $(call deep_source_search,H)
+h := $(wildcard *.h) $(call f_deep_source_search,h)
+hpp := $(wildcard *.hpp) $(call f_deep_source_search,hpp) 
+cap_h := $(wildcard *.H) $(call f_deep_source_search,H)
 
 
 # ---------------------------- Sources 
-c_srcs := $(wildcard *.c) $(call deep_source_search,c)
-cpp_srcs := $(wildcard *.cpp) $(call deep_source_search,cpp) 
-cxx_srcs := $(wildcard *.C) $(call deep_source_search,C) 
+c_srcs := $(wildcard *.c) $(call f_deep_source_search,c)
+cpp_srcs := $(wildcard *.cpp) $(call f_deep_source_search,cpp) 
+cxx_srcs := $(wildcard *.C) $(call f_deep_source_search,C) 
 
 srcs = $(c_srcs) $(cpp_srcs) $(cxx_srcs)
 
@@ -118,7 +114,7 @@ rm -f *.o; rm -f *.so*;
 endef
 
 define f_clean_main
-$(fclean) if [ -a $(name) ]; then rm $(name); fi;
+$(f_clean) if [ -a $(name) ]; then rm $(name); fi;
 endef
 
 define f_compile_subdir
