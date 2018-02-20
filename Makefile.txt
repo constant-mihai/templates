@@ -24,7 +24,7 @@ shl_fullname := $(shl_soname).$(shl_minor_number).$(shl_release_number)
 # ---------------------------- Directories 
 SUBDIRS := <SUBDIRS> 
 CURR_DIR := $(PWD)
-include_dirs := 
+include_dirs := <INCLUDES>
 library_dirs := <LIBDIRS> 
 libraries := <LIBRARIES> 
 
