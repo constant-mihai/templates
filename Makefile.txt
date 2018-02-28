@@ -1,17 +1,55 @@
-# --------------------------- GNU
+##############################################################################################
+########################################## Functions #########################################
+##############################################################################################
+##############################################################################################
+
+# ---------------------------- Check subdirs for libraries ---------------------------- #
+#                                                                                       #
+# ------------------------------------------------------------------------------------- #
+f_check_subdirs_for_libs = $(if $(ifeq "" $(strip$(library_dirs))),$(compile_subdirectories),)
+
+# ---------------------------- User defined functions ----------------------------------#
+#																						#
+# ------------------------------------------------------------------------------------- #
+# Look into each directory from subdirs and search for *.(arg).
+# Where arg can be:
+# A header file
+#  - h
+#  - hpp
+#  - H
+# Or a source file
+#  - c
+#  - cpp
+#  - C
+f_deep_source_search = $(foreach dir,$(subdirs),$(wildcard $(dir)/*.$(1)))
+
+
+##############################################################################################
+########################################## Variables #########################################
+##############################################################################################
+##############################################################################################
+
+# --------------------------- GNU --------------------------- #
+#                                                             # 
+# ----------------------------------------------------------- # 
 SHELL:= /bin/bash
 .RECIPEPREFIX := >
+
+# --------------------------- Filetypes --------------------- #
+#                                                             # 
+# ----------------------------------------------------------- # 
 .SUFFIXES:
 .SUFFIXES: .c .C .cpp .o
 
-# --------------------------- General 
-name := <NAME> 
-# Recursive determines wether the $(library_dirs) subdirectories have makefiles of their own.
-# If yes, then make descends into each one and calls make there
-recursive := <RECURSIVE> 
+# --------------------------- General ----------------------- #
+#                                                             # 
+# ----------------------------------------------------------- # 
+name := <NAME>
 main := <MAIN> 
 
-# ---------------------------- Shared library 
+# ---------------------------- Shared library --------------- #
+#                                                             # 
+# ----------------------------------------------------------- # 
 shl_name := $(name)
 shl_version := 1
 shl_release_number := 0
@@ -21,17 +59,21 @@ shl_soname := $(shl_linker_name).$(shl_version)
 shl_fullname := $(shl_soname).$(shl_minor_number).$(shl_release_number)
 
 
-# ---------------------------- Directories 
-SUBDIRS := <SUBDIRS> 
+# ---------------------------- Directories ------------------ # 
+#                                                             # 
+# ----------------------------------------------------------- # 
+subdirs := <SUBDIRS>
 CURR_DIR := $(PWD)
 include_dirs := <INCLUDES>
-library_dirs := <LIBDIRS> 
-libraries := <LIBRARIES> 
+library_dirs := <LIBDIRS>
+libraries := <LIBRARIES>
 
-# ---------------------------- Compiler 
+# ---------------------------- Compiler --------------------- # 
+#                                                             # 
+# ----------------------------------------------------------- # 
 CC := gcc
 CXX := g++ 
-compiler := <COMPILER> 
+compiler := <COMPILER>
 # Compilation command for the main program.
 compile_main = $(compiler) $(objs) -o $(name) $(LDFLAGS)
 
@@ -49,35 +91,26 @@ endef
 # It it is NOT then compile this as a lib.
 compile = $(if $(findstring yes,$(main)),$(compile_main),$(compile_shared_lib))
 
-
-# ---------------------------- User defined functions
-# Look into each directory from SUBDIRS and search for *.(arg).
-# Where arg can be:
-# A header file
-#  - h
-#  - hpp
-#  - H
-# Or a source file
-#  - c
-#  - cpp
-#  - C
-f_deep_source_search = $(foreach dir,$(SUBDIRS),$(wildcard $(dir)/*.$(1)))
-
-
-# ---------------------------- Headers 
+# ---------------------------- Headers  --------------------- # 
+#                                                             # 
+# ----------------------------------------------------------- # 
 h := $(wildcard *.h) $(call f_deep_source_search,h)
 hpp := $(wildcard *.hpp) $(call f_deep_source_search,hpp) 
 cap_h := $(wildcard *.H) $(call f_deep_source_search,H)
 
 
-# ---------------------------- Sources 
+# ---------------------------- Sources ---------------------- # 
+#                                                             # 
+# ----------------------------------------------------------- # 
 c_srcs := $(wildcard *.c) $(call f_deep_source_search,c)
 cpp_srcs := $(wildcard *.cpp) $(call f_deep_source_search,cpp) 
 cxx_srcs := $(wildcard *.C) $(call f_deep_source_search,C) 
 
 srcs = $(c_srcs) $(cpp_srcs) $(cxx_srcs)
 
-# ---------------------------- Objects 
+# ---------------------------- Objects ---------------------- # 
+#                                                             # 
+# ----------------------------------------------------------- # 
 #cxx_objs := ${cxx_srcs:.C=.o}
 #cxx_objs += ${cpp_srcs:.cpp=.o}
 #c_objs := ${c_srcs:.c=.o}
@@ -86,11 +119,15 @@ objs := $(addsuffix .o,$(basenames))
 objs_without_main := $(filter-out $(name).o,$(objs))
 
 
-# ---------------------------- Includes 
+# ---------------------------- Includes---------------------- # 
+#                                                             # 
+# ----------------------------------------------------------- # 
 incs := $(h) $(hpp) $(cap_h)
 
 
-# ---------------------------- Flags
+# ---------------------------- Flags ------------------------ # 
+#                                                             # 
+# ----------------------------------------------------------- # 
 shared_flags := -shared -Wl,-soname,$(shl_soname)
 CFLAGS += -Wall -fno-diagnostics-show-caret 
 CPPFLAGS += -Wall -O0 -fno-diagnostics-show-caret -std=c++11 -fPIC
@@ -129,7 +166,7 @@ compile_subdirectories = $(foreach dir,$(library_dirs),$(call f_compile_subdir,$
 clean_subdirectories = $(foreach dir,$(library_dirs),$(call f_clean_subdir,$(dir)))
 
 main: $(objs)
->   $(if $(findstring yes,$(recursive)),$(compile_subdirectories),)
+>   $(call f_check_subdirs_for_libs)
 >   $(compile)
 
 $(objs): $(srcs) $(incs)
@@ -139,7 +176,7 @@ subdirs:
 all: main
 
 shared: $(objs)
->   $(if $(findstring yes,$(recursive)),$(compile_subdirectories),)
+>   $(call f_check_subdirs_for_libs)
 >   $(compile_shared_lib)
 
 print-%: ; @echo $* = $($*)
@@ -158,7 +195,7 @@ print-all: ;
 >    @echo shl_fullname       = $(shl_fullname)
 
 >    @echo ------------------------------------------ Directories  
->    @echo SUBDIRS              = $(SUBDIRS) 
+>    @echo subdirs              = $(subdirs) 
 >    @echo CURR_DIR             = $($CURR_DIR)
 >    @echo include_dirs = $(include_dirs) 
 >    @echo library_dirs = $(library_dirs)
