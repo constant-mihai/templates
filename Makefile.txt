@@ -5,13 +5,13 @@
 ##############################################################################################
 
 # ---------------------------- Check subdirs for libraries ---------------------------- #
-#																						#
+#                                                                                       #
 # ------------------------------------------------------------------------------------- #
 f_check_subdirs_for_libs = $(if $(library_dirs),$(compile_subdirectories),)
 
 
 # ---------------------------- Compile subirs ------------------------------------------#
-#																					    #
+#                                                                                       #
 # ------------------------------------------------------------------------------------- #
 define f_compile_subdir
 cd $(1); make; cd $(CURR_DIR); 
@@ -22,7 +22,7 @@ clean_subdirectories = $(foreach dir,$(library_dirs),$(call f_clean_subdir,$(dir
 
 
 # ---------------------------- User defined functions ----------------------------------#
-#																					    #
+#                                                                                       #
 # ------------------------------------------------------------------------------------- #
 # Look into each directory from subdirs and search for *.(arg).
 # Where arg can be:
@@ -35,9 +35,10 @@ clean_subdirectories = $(foreach dir,$(library_dirs),$(call f_clean_subdir,$(dir
 #  - cpp
 #  - C
 f_deep_source_search = $(foreach dir,$(subdirs),$(wildcard $(dir)/*.$(1)))
+f_deep_includes_search = $(foreach dir,$(include_dirs),$(wildcard $(dir)/*.$(1)))
 
 # ---------------------------- Compile shared lib --------------------------------------#
-#																					    #
+#                                                                                       #
 # ------------------------------------------------------------------------------------- #
 # Compilation command for a shared lib. One liner:
 #compile_shared_lib = $(compiler) $(shared_flags) $(objs_without_main) -o $(shl_fullname) $(LDFLAGS); ln -sf $(shl_fullname) $(shl_soname); ln -sf $(shl_fullname) $(shl_linker_name)
@@ -49,7 +50,7 @@ ln -sf $(shl_fullname) $(shl_linker_name)
 endef
 
 # ---------------------------- Compile Main --------------------------------------------#
-#																					    #
+#                                                                                       #
 # ------------------------------------------------------------------------------------- #
 # Test if this is the root directory of the project.
 # If it is then compile this as such.
@@ -57,7 +58,7 @@ endef
 compile = $(if $(findstring yes,$(main)),$(compile_main),$(compile_shared_lib))
 
 # ---------------------------- Clean functions -----------------------------------------#
-#																					    #
+#                                                                                       #
 # ------------------------------------------------------------------------------------- #
 define f_clean
 rm -f *.o; rm -f *.so*;
@@ -127,9 +128,9 @@ compile_main = $(compiler) $(objs) -o $(name) $(LDFLAGS)
 # ---------------------------- Headers  --------------------- # 
 #                                                             #
 # ----------------------------------------------------------- # 
-h := $(wildcard *.h) $(call f_deep_source_search,h)
-hpp := $(wildcard *.hpp) $(call f_deep_source_search,hpp) 
-cap_h := $(wildcard *.H) $(call f_deep_source_search,H)
+h := $(wildcard *.h) $(call f_deep_includes_search,h)
+hpp := $(wildcard *.hpp) $(call f_deep_includes_search,hpp)
+cap_h := $(wildcard *.H) $(call f_deep_includes_search,H)
 
 
 # ---------------------------- Sources ---------------------- # 
@@ -180,7 +181,7 @@ LDFLAGS += $(foreach library,$(libraries),-l$(library))
 ##############################################################################################
 
 main: $(objs)
->	@echo Making Main
+>   @echo Making Main
 >   $(f_check_subdirs_for_libs)
 >   $(compile)
 
@@ -191,7 +192,7 @@ subdirs:
 all: main
 
 shared: $(objs)
->	@echo Making Shared lib 
+>   @echo Making Shared lib 
 >   $(f_check_subdirs_for_libs)
 >   $(compile_shared_lib)
 
