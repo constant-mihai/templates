@@ -20,17 +20,6 @@
 #ifndef
 #define
 
-/**
- * ******************************************************
- * @brief 
- * ******************************************************
-**/
-class CLASS_NAME {
-    public: /* Constructors */
-    private: /* Methods */
-    public: /* Methods */
-    private: /* Members*/
-};
 
 #endif
 .
