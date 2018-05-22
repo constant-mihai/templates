@@ -7,7 +7,7 @@
 # ---------------------------- Check subdirs for libraries ---------------------------- #
 #                                                                                       #
 # ------------------------------------------------------------------------------------- #
-f_check_subdirs_for_libs = $(if $(library_dirs),$(compile_subdirectories),)
+f_check_subdirs_for_libs = $(if $(project_library_subdir),$(compile_subdirectories),)
 
 
 # ---------------------------- Compile subirs ------------------------------------------#
@@ -17,8 +17,8 @@ define f_compile_subdir
 cd $(1); make; cd $(CURR_DIR); 
 endef
 
-compile_subdirectories = $(foreach dir,$(library_dirs),$(call f_compile_subdir,$(dir)))
-clean_subdirectories = $(foreach dir,$(library_dirs),$(call f_clean_subdir,$(dir)))
+compile_subdirectories = $(foreach dir,$(project_library_subdir),$(call f_compile_subdir,$(dir)))
+clean_subdirectories = $(foreach dir,$(project_library_subdir),$(call f_clean_subdir,$(dir)))
 
 
 # ---------------------------- User defined functions ----------------------------------#
@@ -113,6 +113,7 @@ shl_fullname := $(shl_soname).$(shl_minor_number).$(shl_release_number)
 subdirs := <SUBDIRS>
 CURR_DIR := $(PWD)
 include_dirs := <INCLUDES>
+project_library_subdir := <PROJECT_LIBRARY_SUBDIR>
 library_dirs := <LIBDIRS>
 libraries := <LIBRARIES>
 
@@ -168,6 +169,7 @@ CPPFLAGS += -Wall -O0 -fno-diagnostics-show-caret -std=c++11 -fPIC
 
 CPPFLAGS += $(foreach includedir,$(include_dirs),-I$(includedir))
 LDFLAGS += $(foreach librarydir,$(library_dirs),-L$(librarydir))
+LDFLAGS += $(foreach librarydir,$(project_library_subdir),-L$(librarydir))
 LDFLAGS += $(foreach library,$(libraries),-l$(library))
 
 
@@ -215,6 +217,7 @@ print-all: ;
 >    @echo subdirs              = $(subdirs) 
 >    @echo CURR_DIR             = $($CURR_DIR)
 >    @echo include_dirs = $(include_dirs) 
+>    @echo project_library_dirs = $(project_library_dirs)
 >    @echo library_dirs = $(library_dirs)
 >    @echo libraries    = $(libraries)
 
