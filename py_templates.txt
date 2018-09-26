@@ -1,0 +1,14 @@
+:insert
+#!/usr/bin/python3
+
+#
+# Main
+#
+def main():
+    pass
+
+#
+# Module check
+#
+if __name__ == "__main__":
+    main()
