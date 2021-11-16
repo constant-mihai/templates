@@ -1,0 +1,25 @@
+#
+# General
+# -------------------------------------- #
+# -------------------------------------- #
+name := <NAME>
+main := <MAIN>
+
+#
+# Directories
+# -------------------------------------- #
+# -------------------------------------- #
+subdirs := <SUBDIRS> 
+CURR_DIR := $(PWD)
+include_dirs := -I. \
+		   -I$(ROOT_PATH) \
+		   -I/usr/local/include/ \
+		   -I<INCLUDES>
+library_dirs := -L<LIBRARY_DIRS>
+libraries := -l<LIBRARIES>
+
+#
+# Compiler
+# -------------------------------------- #
+# -------------------------------------- #
+compiler := <COMPILER> 

@@ -1,15 +1,15 @@
 ######################################################################
 # Recipes.
 ######################################################################
-include <VAR_FILE> 
-include <FUN_FILE>
+include Makefile.default
+include Makefile.var
+include Makefile.fun
 
 #
 # Phony 
 # ----------------------------- #
 # ----------------------------- #
 .PHONY: all clean cleanall debug help
-
 
 #
 # Recipes
@@ -20,26 +20,47 @@ include <FUN_FILE>
 # programs in one folder.
 # Current implementation requires each prog
 # has it's own folder.
-main: $(objs)
+all: $(objs)
 >   @echo Making Main
 >   $(f_check_subdirs_for_libs)
 >   $(compile)
 
 $(objs): $(srcs) $(incs)
+>   $(verbose)$(compiler) $(CCFLAGS) $(include_dirs) -c $(realpath $<) -o $@
 
-subdirs:
-
-all: main
 
 # TODO there is another use case here
 # Where the user might want to make multiple
 # libraries in one folder.
-# Current implementation requires each library 
+# Current implementation requires each library
 # has it's own folder.
 shared: $(objs)
->   @echo Making Shared lib 
+>   @echo Making Shared lib
 >   $(f_check_subdirs_for_libs)
 >   $(compile_shared_lib)
+
+clean:
+>   $(f_clean_main)
+
+cleanall: 
+>   $(if $(findstring yes,$(recursive)),$(clean_subdirectories),)
+>   $(f_clean_main)
+
+debug: CPPFLAGS += -g 
+debug: all 
+
+debug-shared: CPPFLAGS += -g
+debug-shared: shared
+
+help:
+>   @$(MAKE) --print-data-base --question all | \
+	grep -v -e '^no-such-target' -e '^makefile' |       \
+    awk '/^[^.%][-A-Za-z0-9_]*:/                        \
+          { print substr($$1, 1, length($$1)-1) }' |      \
+    sort 
+
+# Alternatively:
+# awk '/^[^.%][-A-Za-z0-9_]*:/ { print }' |      \
 
 print-%: ; @echo $* = $($*)
 
@@ -85,26 +106,3 @@ print-all: ;
 >    @echo h            = $(h)
 >    @echo hpp          = $(hpp)
 >    @echo cap_h        = $(cap_h)
-
-clean:
->   $(f_clean_main)
-
-cleanall: 
->   $(if $(findstring yes,$(recursive)),$(clean_subdirectories),)
->   $(f_clean_main)
-
-debug: CPPFLAGS += -g 
-debug: all 
-
-debug-shared: CPPFLAGS += -g
-debug-shared: shared
-
-help:
->   @$(MAKE) --print-data-base --question main | \
-	grep -v -e '^no-such-target' -e '^makefile' |       \
-    awk '/^[^.%][-A-Za-z0-9_]*:/                        \
-          { print substr($$1, 1, length($$1)-1) }' |      \
-    sort 
-
-# Alternatively:
-# awk '/^[^.%][-A-Za-z0-9_]*:/ { print }' |      \
